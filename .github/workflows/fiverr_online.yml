@@ -1,0 +1,36 @@
+name: Fiverr 24/7 Online Status
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  stay-online:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: |
+          pip install selenium selenium-stealth selenium-wire blinker==1.7.0
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+      - name: Run Fiverr Script
+        env:
+          PROXY_HOST: ${{ secrets.PROXY_HOST }}
+          PROXY_PORT: ${{ secrets.PROXY_PORT }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+        run: python fiverr_stay_online.py
+      - name: Persist Cookies
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add fiverr_cookies.pkl
+          git commit -m "Update session cookies" || echo "No changes"
+          git push
