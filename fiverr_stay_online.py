@@ -8,7 +8,7 @@ from selenium_stealth import stealth
 
 FIVERR_URL = "https://www.fiverr.com/"
 DASHBOARD_URL = "https://www.fiverr.com/users/delightspark/manage_gigs"
-COOKIE_FILE = "fiverr_cookies.json" # We are now using JSON!
+COOKIE_FILE = "fiverr_cookies.json"
 
 PROXY_HOST = os.environ.get("PROXY_HOST" )
 PROXY_PORT = os.environ.get("PROXY_PORT")
@@ -40,14 +40,21 @@ def load_cookies(driver):
         with open(COOKIE_FILE, 'r') as f:
             cookies = json.load(f)
             for cookie in cookies:
-                # Clean up the cookie format for Selenium
+                # Fix "sameSite" for Selenium compatibility
                 if 'sameSite' in cookie:
-                    if cookie['sameSite'] not in ["Strict", "Lax", "None"]:
-                        del cookie['sameSite']
+                    mapping = {"no_restriction": "None", "lax": "Lax", "strict": "Strict"}
+                    cookie['sameSite'] = mapping.get(cookie['sameSite'].lower(), cookie['sameSite'])
+                
+                # Remove extra fields that Selenium doesn't use
+                cookie.pop('expirationDate', None)
+                cookie.pop('hostOnly', None)
+                cookie.pop('session', None)
+                cookie.pop('storeId', None)
+                
                 try:
                     driver.add_cookie(cookie)
-                except:
-                    pass
+                except Exception as e:
+                    print(f"Skipped a cookie: {cookie.get('name')} - {e}")
         return True
     return False
 
@@ -58,11 +65,15 @@ def run():
         driver.get(FIVERR_URL)
         time.sleep(5)
         if load_cookies(driver):
+            print("Cookies loaded. Refreshing...")
             driver.refresh()
-            time.sleep(5)
+            time.sleep(7)
             driver.get(DASHBOARD_URL)
-            print("Successfully logged in using cookies!")
             time.sleep(10)
+            if "login" in driver.current_url.lower():
+                print("Session expired or failed.")
+            else:
+                print(f"SUCCESS! Currently on: {driver.current_url}")
         else:
             print("No cookie file found.")
     finally:
