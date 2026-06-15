@@ -17,7 +17,8 @@ jobs:
           python-version: '3.10'
       - name: Install Dependencies
         run: |
-          pip install selenium selenium-stealth selenium-wire blinker==1.7.0
+          # This line fixes the 'get_extension' error
+          pip install selenium selenium-stealth selenium-wire blinker==1.7.0 pyOpenSSL==24.0.0
           sudo apt-get update
           sudo apt-get install -y chromium-browser
       - name: Run Fiverr Script
@@ -27,10 +28,3 @@ jobs:
           PROXY_USER: ${{ secrets.PROXY_USER }}
           PROXY_PASS: ${{ secrets.PROXY_PASS }}
         run: python fiverr_stay_online.py
-      - name: Persist Cookies
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add fiverr_cookies.pkl
-          git commit -m "Update session cookies" || echo "No changes"
-          git push
